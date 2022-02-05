@@ -1,0 +1,8 @@
+cake
+deck
+clock
+cook
+cooked
+dog
+cat
+pig
