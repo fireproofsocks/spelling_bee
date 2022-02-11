@@ -19,8 +19,10 @@ defmodule SpellingBee do
 
   ## Examples
 
-  The results here will only be as good as the word list:
+  The results here will only be as good as the word list. Remember to configure IEx
+  so it does not clip the responses.
 
+      iex> IEx.configure(inspect: [limit: :infinity, printable_limit: :infinity])
       iex> SpellingBee.words("efl")
       {:ok, ["leef", "flee", "fell", "feel"]}
 
