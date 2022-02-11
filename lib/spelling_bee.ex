@@ -26,6 +26,9 @@ defmodule SpellingBee do
 
       iex> SpellingBee.words("abdr", "a", min_length: 5)
       {:ok, ["radar", "draba", "barba", "babar", "araba"]}
+
+      iex> SpellingBee.words("abcde", "x")
+      {:error, "Missing required letter(s)"}
   """
   def words(available, required \\ "", opts \\ [])
       when is_binary(available) and is_binary(required) and is_list(opts) do
@@ -62,9 +65,7 @@ defmodule SpellingBee do
     wordlist
     |> File.stream!()
     |> Enum.reduce([], fn line, acc ->
-      word = String.trim(line)
-
-      with :ok <- spellable?(word, available_set, required_set, word),
+      with {:ok, word} <- spellable?(line, available_set, required_set, ""),
            :ok <- word_long_enough(word, min_length) do
         [word | acc]
       else
@@ -73,16 +74,22 @@ defmodule SpellingBee do
     end)
   end
 
-  defp spellable?("", _, required_set, word) do
-    word
+  # Returns {:ok, trimmed_word} if we have a match
+  # Words terminate with newline
+  defp spellable?("\n", _, required_set, word_acc) do
+    word_acc
     |> to_set()
     |> contains_required_letters(required_set)
+    |> case do
+      :ok -> {:ok, word_acc}
+      {:error, error} -> {:error, error}
+    end
   end
 
-  defp spellable?(<<head::binary-size(1)>> <> tail, available_set, required_set, word) do
-    case MapSet.member?(available_set, head) do
+  defp spellable?(<<letter::binary-size(1)>> <> tail, available_set, required_set, word_acc) do
+    case MapSet.member?(available_set, letter) do
       true ->
-        spellable?(tail, available_set, required_set, word)
+        spellable?(tail, available_set, required_set, word_acc <> letter)
 
       false ->
         :skip
