@@ -106,7 +106,7 @@ defmodule SpellingBee do
   defp wordlist_exists(wordlist) do
     case File.exists?(wordlist) do
       true -> :ok
-      false -> {:error, "Wordlist #{inspect(wordlist)} does not exist or is a directory"}
+      false -> {:error, "Wordlist #{inspect(wordlist)} does not exist"}
     end
   end
 
