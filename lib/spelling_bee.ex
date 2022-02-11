@@ -15,9 +15,17 @@ defmodule SpellingBee do
 
   ## Options
   - `:wordlist` path to a wordlist file. Default: `#{@default_wordlist}`
-  - `:min_length` (integer) minimum length that solutions must have to be viable. Default: `#{
-    @default_min_length
-  }`
+  - `:min_length` (integer) minimum length that solutions must have to be viable. Default: `#{@default_min_length}`
+
+  ## Examples
+
+  The results here will only be as good as the word list:
+
+      iex> SpellingBee.words("efl")
+      {:ok, ["leef", "flee", "fell", "feel"]}
+
+      iex> SpellingBee.words("abdr", "a", min_length: 5)
+      {:ok, ["radar", "draba", "barba", "babar", "araba"]}
   """
   def words(available, required \\ "", opts \\ [])
       when is_binary(available) and is_binary(required) and is_list(opts) do
@@ -27,9 +35,7 @@ defmodule SpellingBee do
     min_length = Keyword.get(opts, :min_length, @default_min_length)
 
     Logger.debug(
-      "Available #{inspect(available_set)}; required: #{inspect(required_set)}; wordlist: #{
-        wordlist
-      }; min_length: #{min_length}"
+      "Available #{inspect(available_set)}; required: #{inspect(required_set)}; wordlist: #{wordlist}; min_length: #{min_length}"
     )
 
     with :ok <- contains_required_letters(available_set, required_set),
