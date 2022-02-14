@@ -23,16 +23,16 @@ defmodule SpellingBee do
   so it does not clip the responses.
 
       iex> IEx.configure(inspect: [limit: :infinity, printable_limit: :infinity])
-      iex> SpellingBee.words("efl")
+      iex> SpellingBee.solutions("efl")
       {:ok, ["leef", "flee", "fell", "feel"]}
 
-      iex> SpellingBee.words("abdr", "a", min_length: 5)
+      iex> SpellingBee.solutions("abdr", "a", min_length: 5)
       {:ok, ["radar", "draba", "barba", "babar", "araba"]}
 
-      iex> SpellingBee.words("abcde", "x")
+      iex> SpellingBee.solutions("abcde", "x")
       {:error, "Missing required letter(s)"}
   """
-  def words(available, required \\ "", opts \\ [])
+  def solutions(available, required \\ "", opts \\ [])
       when is_binary(available) and is_binary(required) and is_list(opts) do
     avail_letters = to_set(available)
     required_letters = to_set(required)
