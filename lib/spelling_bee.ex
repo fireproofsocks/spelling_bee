@@ -34,19 +34,19 @@ defmodule SpellingBee do
   """
   def words(available, required \\ "", opts \\ [])
       when is_binary(available) and is_binary(required) and is_list(opts) do
-    available_set = to_set(available)
-    required_set = to_set(required)
+    avail_letters = to_set(available)
+    required_letters = to_set(required)
     wordlist = Keyword.get(opts, :wordlist, @default_wordlist)
     min_length = Keyword.get(opts, :min_length, @default_min_length)
 
     Logger.debug(
-      "Available #{inspect(available_set)}; required: #{inspect(required_set)}; wordlist: #{wordlist}; min_length: #{min_length}"
+      "Available #{inspect(avail_letters)}; required: #{inspect(required_letters)}; wordlist: #{wordlist}; min_length: #{min_length}"
     )
 
-    with :ok <- has_required_letters(available_set, required_set),
+    with :ok <- has_required_letters(avail_letters, required_letters),
          :ok <- wordlist_exists(wordlist),
          :ok <- wordlist_not_dir(wordlist) do
-      {:ok, anagrams(wordlist, available_set, required_set, min_length)}
+      {:ok, anagrams(wordlist, avail_letters, required_letters, min_length)}
     end
   end
 
@@ -56,19 +56,20 @@ defmodule SpellingBee do
     |> MapSet.new()
   end
 
-  defp has_required_letters(available_set, required_set) do
-    case MapSet.subset?(required_set, available_set) do
+  defp has_required_letters(avail_letters, required_letters) do
+    case MapSet.subset?(required_letters, avail_letters) do
       false -> {:error, "Missing required letter(s)"}
       true -> :ok
     end
   end
 
-  defp anagrams(wordlist, available_set, required_set, min_length) do
+  defp anagrams(wordlist, avail_letters, required_letters, min_length) do
     wordlist
     |> File.stream!()
     |> Enum.reduce(MapSet.new(), fn line, acc ->
-      with {:ok, word} <- spellable?(line, available_set, required_set, ""),
-           :ok <- word_long_enough(word, min_length) do
+      with {:ok, word} <- spellable?(line, avail_letters, ""),
+           :ok <- word_long_enough(word, min_length),
+           :ok <- word |> to_set() |> has_required_letters(required_letters) do
         MapSet.put(acc, word)
       else
         _ -> acc
@@ -79,20 +80,12 @@ defmodule SpellingBee do
 
   # Returns {:ok, trimmed_word} if we have a match
   # Words terminate with newline
-  defp spellable?("\n", _, required_set, word_acc) do
-    word_acc
-    |> to_set()
-    |> has_required_letters(required_set)
-    |> case do
-      :ok -> {:ok, word_acc}
-      {:error, error} -> {:error, error}
-    end
-  end
+  defp spellable?("\n", _, word_acc), do: {:ok, word_acc}
 
-  defp spellable?(<<letter::binary-size(1)>> <> tail, available_set, required_set, word_acc) do
-    case MapSet.member?(available_set, letter) do
+  defp spellable?(<<letter::binary-size(1)>> <> tail, avail_letters, word_acc) do
+    case MapSet.member?(avail_letters, letter) do
       true ->
-        spellable?(tail, available_set, required_set, word_acc <> letter)
+        spellable?(tail, avail_letters, word_acc <> letter)
 
       false ->
         :skip
