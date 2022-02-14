@@ -43,10 +43,10 @@ defmodule SpellingBee do
       "Available #{inspect(available_set)}; required: #{inspect(required_set)}; wordlist: #{wordlist}; min_length: #{min_length}"
     )
 
-    with :ok <- contains_required_letters(available_set, required_set),
+    with :ok <- has_required_letters(available_set, required_set),
          :ok <- wordlist_exists(wordlist),
          :ok <- wordlist_not_dir(wordlist) do
-      {:ok, find_words(wordlist, available_set, required_set, min_length)}
+      {:ok, anagrams(wordlist, available_set, required_set, min_length)}
     end
   end
 
@@ -56,24 +56,25 @@ defmodule SpellingBee do
     |> MapSet.new()
   end
 
-  defp contains_required_letters(available_set, required_set) do
+  defp has_required_letters(available_set, required_set) do
     case MapSet.subset?(required_set, available_set) do
       false -> {:error, "Missing required letter(s)"}
       true -> :ok
     end
   end
 
-  defp find_words(wordlist, available_set, required_set, min_length) do
+  defp anagrams(wordlist, available_set, required_set, min_length) do
     wordlist
     |> File.stream!()
-    |> Enum.reduce([], fn line, acc ->
+    |> Enum.reduce(MapSet.new(), fn line, acc ->
       with {:ok, word} <- spellable?(line, available_set, required_set, ""),
            :ok <- word_long_enough(word, min_length) do
-        [word | acc]
+        MapSet.put(acc, word)
       else
         _ -> acc
       end
     end)
+    |> Enum.to_list()
   end
 
   # Returns {:ok, trimmed_word} if we have a match
@@ -81,7 +82,7 @@ defmodule SpellingBee do
   defp spellable?("\n", _, required_set, word_acc) do
     word_acc
     |> to_set()
-    |> contains_required_letters(required_set)
+    |> has_required_letters(required_set)
     |> case do
       :ok -> {:ok, word_acc}
       {:error, error} -> {:error, error}
